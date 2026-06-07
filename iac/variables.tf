@@ -22,7 +22,7 @@ variable "region" {
 variable "vpc_cidr_block" {
   description = "CIDR block for the VPC"
   type        = string
-  default     = "10.0.0.0/16"
+  default     = "10.10.0.0/16"
 }
 
 variable "private_subnets" {
@@ -33,12 +33,6 @@ variable "private_subnets" {
 variable "public_subnets" {
   description = "AWS VPC public subnets"
   type        = list(string)
-}
-
-variable "save_vpc_cost" {
-  description = "Disables NAT gateway and elastic IP to save cost"
-  type        = bool
-  default     = false
 }
 
 ###############################################################################
@@ -53,9 +47,8 @@ variable "force_destroy_bucket" {
 variable "bucket_versioning" {
   description = "Deletes bucket and all of its content"
   type        = string
-  default     = "Disabled"
+  default     = "Enabled"
 }
-#
 
 ###############################################################################
 # emr
@@ -83,6 +76,17 @@ variable "emr_core_instance_count" {
   type        = number
   default     = 1
 }
+
+###############################################################################
+# mwaa
+
+variable "airflow_environment_name" {
+  type        = string
+  default     = "airflow-orchestrator"
+}
+
+
+
 
 ###############################################################################
 # secrets

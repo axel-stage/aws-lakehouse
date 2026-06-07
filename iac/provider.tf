@@ -5,7 +5,7 @@ terraform {
     profile                  = "default"
     shared_config_files      = ["/home/xl/.aws/config"]
     shared_credentials_files = ["/home/xl/.aws/credentials"]
-    encrypt = true
+    encrypt                  = true
   }
 
   required_providers {

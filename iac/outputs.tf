@@ -18,3 +18,8 @@ output "emr_master_dns" {
   description = "DNS name of EMR master node (if created)"
   value       = var.create_emr_cluster ? aws_emr_cluster.lakehouse[0].master_public_dns : null
 }
+
+output "mwaa_environment_arn" {
+  description = "ARN of MWAA environment"
+  value       = aws_mwaa_environment.this.arn
+}

@@ -78,3 +78,29 @@ resource "aws_s3_object" "workspace" {
   bucket = aws_s3_bucket.lakehouse.id
   key    = "workspace/"
 }
+
+resource "aws_s3_object" "lakehouse_dags" {
+  bucket = aws_s3_bucket.lakehouse.id
+  key    = "dags/"
+}
+
+###############################################################################
+# bucket airflow
+
+
+resource "aws_s3_bucket" "airflow" {
+  bucket        = "${var.project}-${var.environment}-airflow-${local.suffix}"
+  force_destroy = var.force_destroy_bucket
+}
+
+resource "aws_s3_bucket_versioning" "airflow" {
+  bucket = aws_s3_bucket.airflow.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+resource "aws_s3_object" "dags" {
+  bucket = aws_s3_bucket.airflow.id
+  key    = "dags/"
+}

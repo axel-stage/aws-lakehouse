@@ -8,7 +8,7 @@ resource "aws_security_group" "emr_master" {
   vpc_id      = aws_vpc.this.id
 
   tags = {
-    Name = "${var.project}-${var.environment}-emr-master-sg"
+    Name                                     = "${var.project}-${var.environment}-emr-master-sg"
     for-use-with-amazon-emr-managed-policies = "true"
   }
 }
@@ -20,7 +20,7 @@ resource "aws_security_group" "emr_core" {
   vpc_id      = aws_vpc.this.id
 
   tags = {
-    Name = "${var.project}-${var.environment}-emr-core-sg"
+    Name                                     = "${var.project}-${var.environment}-emr-core-sg"
     for-use-with-amazon-emr-managed-policies = "true"
   }
 }
@@ -32,7 +32,7 @@ resource "aws_security_group" "emr_service" {
   vpc_id      = aws_vpc.this.id
 
   tags = {
-    Name = "${var.project}-${var.environment}-emr-service-sg"
+    Name                                     = "${var.project}-${var.environment}-emr-service-sg"
     for-use-with-amazon-emr-managed-policies = "true"
   }
 }
@@ -132,7 +132,7 @@ resource "aws_security_group" "workspace" {
   vpc_id      = aws_vpc.this.id
 
   tags = {
-    Name = "${var.project}-${var.environment}-studio-workspace-sg"
+    Name                                     = "${var.project}-${var.environment}-studio-workspace-sg"
     for-use-with-amazon-emr-managed-policies = "true"
   }
 }
@@ -143,7 +143,7 @@ resource "aws_security_group" "engine" {
   vpc_id      = aws_vpc.this.id
 
   tags = {
-    Name = "${var.project}-${var.environment}-studio-engine-sg",
+    Name                                     = "${var.project}-${var.environment}-studio-engine-sg",
     for-use-with-amazon-emr-managed-policies = "true"
   }
 }
@@ -197,20 +197,20 @@ resource "aws_security_group_rule" "engine_from_workspace_18080" {
 ###############################################################################
 
 resource "aws_security_group_rule" "workspace_https" {
+  security_group_id = aws_security_group.workspace.id
   type              = "egress"
   from_port         = 443
   to_port           = 443
   protocol          = "tcp"
-  security_group_id = aws_security_group.workspace.id
   cidr_blocks       = ["0.0.0.0/0"]
 }
 
 resource "aws_security_group_rule" "engine_all_outbound" {
+  security_group_id = aws_security_group.engine.id
   type              = "egress"
   from_port         = 0
   to_port           = 0
   protocol          = "-1"
-  security_group_id = aws_security_group.engine.id
   cidr_blocks       = ["0.0.0.0/0"]
 }
 
@@ -218,68 +218,132 @@ resource "aws_security_group_rule" "engine_all_outbound" {
 ###############################################################################
 # glue endpoint
 
-resource "aws_security_group" "glue_endpoint" {
-  name        = "${var.project}-${var.environment}-glue-endpoint-sg"
-  description = "Glue VPC endpoint"
-  vpc_id      = aws_vpc.this.id
+# resource "aws_security_group" "glue_endpoint" {
+#   name        = "${var.project}-${var.environment}-glue-endpoint-sg"
+#   description = "Glue VPC endpoint"
+#   vpc_id      = aws_vpc.this.id
 
-  tags = {
-    Name = "${var.project}-${var.environment}-glue-endpoint-sg",
-    for-use-with-amazon-emr-managed-policies = "true"
-  }
+#   tags = {
+#     Name                                     = "${var.project}-${var.environment}-glue-endpoint-sg",
+#     for-use-with-amazon-emr-managed-policies = "true"
+#   }
 
-}
+# }
 
-resource "aws_security_group_rule" "glue_https_from_master" {
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
+# resource "aws_security_group_rule" "glue_https_from_master" {
+#   type      = "ingress"
+#   from_port = 443
+#   to_port   = 443
+#   protocol  = "tcp"
 
-  security_group_id        = aws_security_group.glue_endpoint.id
-  source_security_group_id = aws_security_group.emr_master.id
-}
+#   security_group_id        = aws_security_group.glue_endpoint.id
+#   source_security_group_id = aws_security_group.emr_master.id
+# }
 
-resource "aws_security_group_rule" "glue_https_from_core" {
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
+# resource "aws_security_group_rule" "glue_https_from_core" {
+#   type      = "ingress"
+#   from_port = 443
+#   to_port   = 443
+#   protocol  = "tcp"
 
-  security_group_id        = aws_security_group.glue_endpoint.id
-  source_security_group_id = aws_security_group.emr_core.id
-}
+#   security_group_id        = aws_security_group.glue_endpoint.id
+#   source_security_group_id = aws_security_group.emr_core.id
+#}
 
 ###############################################################################
 # sts endpoint
 
-resource "aws_security_group" "sts_endpoint" {
-  name        = "${var.project}-${var.environment}-sts-endpoint-sg"
-  description = "sts VPC endpoint"
+# resource "aws_security_group" "sts_endpoint" {
+#   name        = "${var.project}-${var.environment}-sts-endpoint-sg"
+#   description = "sts VPC endpoint"
+#   vpc_id      = aws_vpc.this.id
+
+#   tags = {
+#     Name                                     = "${var.project}-${var.environment}-sts-endpoint-sg",
+#     for-use-with-amazon-emr-managed-policies = "true"
+#   }
+# }
+
+# resource "aws_security_group_rule" "sts_https_from_master" {
+#   type      = "ingress"
+#   from_port = 443
+#   to_port   = 443
+#   protocol  = "tcp"
+
+#   security_group_id        = aws_security_group.sts_endpoint.id
+#   source_security_group_id = aws_security_group.emr_master.id
+# }
+
+# resource "aws_security_group_rule" "sts_https_from_core" {
+#   type      = "ingress"
+#   from_port = 443
+#   to_port   = 443
+#   protocol  = "tcp"
+
+#   security_group_id        = aws_security_group.sts_endpoint.id
+#   source_security_group_id = aws_security_group.emr_core.id
+# }
+
+###############################################################################
+# mwaa sg
+
+resource "aws_security_group" "airflow" {
+  name        = "${var.project}-${var.environment}-airflow-sg"
+  description = "Security group for Manage Workflow Apache Airflow"
   vpc_id      = aws_vpc.this.id
 
   tags = {
-    Name = "${var.project}-${var.environment}-sts-endpoint-sg",
+    Name                                     = "${var.project}-${var.environment}-airflow-sg"
     for-use-with-amazon-emr-managed-policies = "true"
   }
 }
 
-resource "aws_security_group_rule" "sts_https_from_master" {
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
+# resource "aws_security_group_rule" "airflow_inbound_internal_https" {
+#   security_group_id = aws_security_group.airflow.id
+#   type              = "ingress"
+#   from_port         = 443
+#   to_port           = 443
+#   protocol          = "tcp"
+#   cidr_blocks       = [ata.aws_subnet.selected.cidr_block]
+# }
 
-  security_group_id        = aws_security_group.sts_endpoint.id
-  source_security_group_id = aws_security_group.emr_master.id
+resource "aws_security_group_rule" "airflow_inbound_self" {
+  security_group_id = aws_security_group.airflow.id
+  type              = "ingress"
+  self              = true
+  from_port         = 0
+  to_port           = 65535
+  protocol          = "tcp"
 }
 
-resource "aws_security_group_rule" "sts_https_from_core" {
-  type                     = "ingress"
-  from_port                = 443
-  to_port                  = 443
-  protocol                 = "tcp"
+resource "aws_security_group_rule" "airflow_outbound_all" {
+  security_group_id = aws_security_group.airflow.id
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1"
+  cidr_blocks       = ["0.0.0.0/0"]
+}
 
-  security_group_id        = aws_security_group.sts_endpoint.id
-  source_security_group_id = aws_security_group.emr_core.id
+###############################################################################
+# airflow vpc endpoints security group
+
+resource "aws_security_group" "vpc_endpoint" {
+  name        = "${var.project}-${var.environment}-vpc-endpoint-sg"
+  description = "Security group for all interface VPC endpoints in private subnets"
+  vpc_id      = aws_vpc.this.id
+
+  tags = {
+    Name = "${var.project}-${var.environment}-vpc-endpoint-sg",
+    for-use-with-amazon-emr-managed-policies = "true"
+  }
+}
+
+resource "aws_security_group_rule" "vpc_endpoint_inbound_all" {
+  security_group_id        = aws_security_group.vpc_endpoint.id
+  type      = "ingress"
+  from_port = 0
+  to_port   = 0
+  protocol  = "-1"
+  source_security_group_id = aws_security_group.vpc_endpoint.id
 }

@@ -410,6 +410,480 @@ resource "aws_iam_role_policy_attachment" "glue_service" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole"
 }
 
+###############################################################################
+# airflow role
+
+resource "aws_iam_role" "airflow" {
+  name = "${var.project}-${var.environment}-airflow-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        Service = [
+          "airflow.amazonaws.com",
+          "airflow-env.amazonaws.com"
+        ]
+      }
+      Action = "sts:AssumeRole"
+    }]
+  })
+}
+
+# resource "aws_iam_role_policy" "airflow" {
+#   name = "${var.project}-${var.environment}-airflow-policy"
+#   role = aws_iam_role.airflow.id
+
+
+#   policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [
+#       {
+#         Sid    = "S3AccountPublicAccessBlock"
+#         Effect = "Allow"
+#         Action = [
+#           "s3:GetAccountPublicAccessBlock"
+#         ]
+#         Resource = "*"
+#       },
+#       {
+#         Sid    = "PublishMetrics"
+#         Effect = "Allow"
+#         Action = [
+#           "airflow:PublishMetrics"
+#         ]
+#         Resource = [
+#           aws_mwaa_environment.this.arn
+#         ]
+#       },
+#       {
+#         Sid    = "CloudWatchLogs"
+#         Effect = "Allow"
+#         Action = [
+#           "logs:CreateLogStream",
+#           "logs:CreateLogGroup",
+#           "logs:PutLogEvents",
+#           "logs:GetLogEvents",
+#           "logs:GetLogRecord",
+#           "logs:GetLogGroupFields",
+#           "logs:GetQueryResults"
+#         ]
+#         Resource = [
+#           "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:airflow-*"
+#         ]
+#       },
+#       {
+#         Sid    = "S3FullAccess"
+#         Effect = "Allow"
+#         Action = [
+#           "s3:*"
+#         ]
+#         Resource = [
+#           "*"
+#         ]
+#       },
+#       {
+#         Sid    = "SQSAccess"
+#         Effect = "Allow"
+#         Action = [
+#           "sqs:ChangeMessageVisibility",
+#           "sqs:DeleteMessage",
+#           "sqs:GetQueueAttributes",
+#           "sqs:GetQueueUrl",
+#           "sqs:ReceiveMessage",
+#           "sqs:SendMessage"
+#         ]
+#         Resource = [
+#           "arn:aws:sqs:${data.aws_region.current.region}:*:airflow-celery-*"
+#         ]
+#       },
+#       {
+#         Sid    = "KMSAccess"
+#         Effect = "Allow"
+#         Action = [
+#           "kms:Decrypt",
+#           "kms:DescribeKey",
+#           "kms:GenerateDataKey*",
+#           "kms:Encrypt"
+#         ]
+#         Resource = [
+#           "arn:aws:kms:*:${data.aws_caller_identity.current.account_id}:key/*"
+#         ]
+#         Condition = {
+#           StringLike = {
+#             "kms:ViaService" = [
+#               "sqs.${data.aws_region.current.region}.amazonaws.com",
+#               "s3.${data.aws_region.current.region}.amazonaws.com"
+#             ]
+#           }
+#         }
+#       }
+#     ]
+#   })
+# }
+
+
+resource "aws_iam_role_policy" "airflow" {
+  name = "${var.project}-${var.environment}-airflow-policy"
+  role = aws_iam_role.airflow.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetAccountPublicAccessBlock"
+        ]
+        Resource = "*"
+      },
+      {
+        Effect = "Allow"
+        Action = "airflow:PublishMetrics"
+        Resource = "arn:aws:airflow:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:environment/${var.airflow_environment_name}"
+      },
+
+      {
+        Effect = "Deny"
+        Action = "s3:ListAllMyBuckets"
+        Resource = [
+          "arn:aws:s3:::${aws_s3_bucket.lakehouse.id}",
+          "arn:aws:s3:::${aws_s3_bucket.lakehouse.id}/*",
+        ]
+      },
+
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject*",
+          "s3:GetBucket*",
+          "s3:List*"
+        ]
+        Resource = [
+          "arn:aws:s3:::${aws_s3_bucket.lakehouse.id}",
+          "arn:aws:s3:::${aws_s3_bucket.lakehouse.id}/*",
+        ]
+      },
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "logs:CreateLogStream",
+          "logs:CreateLogGroup",
+          "logs:PutLogEvents",
+          "logs:GetLogEvents",
+          "logs:GetLogRecord",
+          "logs:GetLogGroupFields",
+          "logs:GetQueryResults"
+        ]
+
+        Resource = [
+          "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:airflow-*"
+        ]
+      },
+
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:DescribeLogGroups"
+        ]
+        Resource = "*"
+      },
+
+      {
+        Effect   = "Allow"
+        Action   = "cloudwatch:PutMetricData"
+        Resource = "*"
+      },
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "sqs:ChangeMessageVisibility",
+          "sqs:DeleteMessage",
+          "sqs:GetQueueAttributes",
+          "sqs:GetQueueUrl",
+          "sqs:ReceiveMessage",
+          "sqs:SendMessage"
+        ]
+
+        Resource = "arn:aws:sqs:${data.aws_region.current.region}:*:airflow-celery-*"
+      },
+
+      {
+        Effect = "Allow"
+
+        Action = [
+          "kms:Decrypt",
+          "kms:DescribeKey",
+          "kms:GenerateDataKey*",
+          "kms:Encrypt"
+        ]
+
+        NotResource = "arn:aws:kms:*:${data.aws_caller_identity.current.account_id}:key/*"
+
+        Condition = {
+          StringLike = {
+            "kms:ViaService" = [
+              "sqs.${data.aws_region.current.region}.amazonaws.com"
+            ]
+          }
+        }
+      }
+    ]
+  })
+}
+
+
+# resource "aws_iam_role_policy" "airflow" {
+#   name = "${var.project}-${var.environment}-airflow-policy"
+#   role = aws_iam_role.airflow.id
+
+
+#   policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [
+#       {
+#         Sid    = "PublishMetrics"
+#         Effect = "Allow"
+#         Action = [
+#           "airflow:PublishMetrics"
+#         ]
+#         Resource = [
+#           aws_mwaa_environment.this.arn
+#         ]
+#       },
+#       {
+#         Sid    = "CloudWatchLogs"
+#         Effect = "Allow"
+#         Action = [
+#           "logs:CreateLogStream",
+#           "logs:CreateLogGroup",
+#           "logs:PutLogEvents",
+#           "logs:GetLogEvents",
+#           "logs:GetLogRecord",
+#           "logs:GetLogGroupFields",
+#           "logs:GetQueryResults"
+#         ]
+#         Resource = [
+#           "arn:aws:logs:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:log-group:airflow-*"
+#         ]
+#       },
+#       {
+#         Sid    = "S3GetAccountPublicAccessBlock"
+#         Effect = "Allow"
+#         Action = ["s3:GetAccountPublicAccessBlock"]
+#         Resource = [
+#           "*"
+#         ]
+#       },
+#       {
+#         Sid    = "S3DenyListAllMyBuckets"
+#         Effect = "Deny"
+#         Action = ["s3:ListAllMyBuckets"]
+#         Resource = [
+#           aws_s3_bucket.lakehouse.arn,
+#           "${aws_s3_bucket.lakehouse.arn}/*"
+#         ]
+#       },
+#       {
+#         Sid    = "S3Access"
+#         Effect = "Allow"
+#         Action = [
+#           "s3:*"
+#         ]
+#         Resource = [
+#           aws_s3_bucket.lakehouse.arn,
+#           "${aws_s3_bucket.lakehouse.arn}/*"
+#         ]
+#       },
+#       {
+#         Sid    = "SQSAccess"
+#         Effect = "Allow"
+#         Action = [
+#           "sqs:ChangeMessageVisibility",
+#           "sqs:DeleteMessage",
+#           "sqs:GetQueueAttributes",
+#           "sqs:GetQueueUrl",
+#           "sqs:ReceiveMessage",
+#           "sqs:SendMessage"
+#         ]
+#         Resource = [
+#           "arn:aws:sqs:${data.aws_region.current.region}:*:airflow-celery-*"
+#         ]
+#       },
+#       {
+#         Sid    = "KMSAccess"
+#         Effect = "Allow"
+#         Action = [
+#           "kms:Decrypt",
+#           "kms:DescribeKey",
+#           "kms:GenerateDataKey*",
+#           "kms:Encrypt"
+#         ]
+#         NotResource = [
+#           "arn:aws:kms:*:${data.aws_caller_identity.current.account_id}:key/*"
+#         ]
+#         Condition = {
+#           StringLike = {
+#             "kms:ViaService" = [
+#               "sqs.${data.aws_region.current.region}.amazonaws.com",
+#               "s3.${data.aws_region.current.region}.amazonaws.com"
+#             ]
+#           }
+#         }
+#       }
+#     ]
+#   })
+# }
+# resource "aws_iam_role_policy" "airflow" {
+#   name = "${var.project}-${var.environment}-airflow-policy"
+#   role = aws_iam_role.airflow.id
+
+#   policy = jsonencode({
+#     Version = "2012-10-17"
+
+#     Statement = [
+#       {
+#         Effect   = "Allow"
+#         Action   = "airflow:*"
+#         Resource = "*"
+#       },
+
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "iam:PassRole"
+#         ]
+#         Resource = "*"
+
+#         Condition = {
+#           StringLike = {
+#             "iam:PassedToService" = "airflow.amazonaws.com"
+#           }
+#         }
+#       },
+
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "iam:ListRoles"
+#         ]
+#         Resource = "*"
+#       },
+
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "iam:CreatePolicy"
+#         ]
+#         Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:policy/service-role/MWAA-Execution-Policy*"
+#       },
+
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "iam:AttachRolePolicy",
+#           "iam:CreateRole"
+#         ]
+#         Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/service-role/AmazonMWAA*"
+#       },
+
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "iam:CreateServiceLinkedRole"
+#         ]
+#         Resource = "arn:aws:iam::*:role/aws-service-role/airflow.amazonaws.com/AWSServiceRoleForAmazonMWAA"
+#       },
+
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "s3:GetBucketLocation",
+#           "s3:ListAllMyBuckets",
+#           "s3:ListBucket",
+#           "s3:ListBucketVersions"
+#         ]
+#         Resource = "*"
+#       },
+
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "s3:CreateBucket",
+#           "s3:PutObject",
+#           "s3:GetEncryptionConfiguration"
+#         ]
+#         Resource = "arn:aws:s3:::*"
+#       },
+
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "ec2:DescribeSecurityGroups",
+#           "ec2:DescribeSubnets",
+#           "ec2:DescribeVpcs",
+#           "ec2:DescribeRouteTables"
+#         ]
+#         Resource = "*"
+#       },
+
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "ec2:AuthorizeSecurityGroupIngress",
+#           "ec2:CreateSecurityGroup"
+#         ]
+#         Resource = "arn:aws:ec2:*:*:security-group/airflow-security-group-*"
+#       },
+
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "kms:ListAliases"
+#         ]
+#         Resource = "*"
+#       },
+
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "ec2:CreateVpcEndpoint"
+#         ]
+#         Resource = [
+#           "arn:aws:ec2:*:*:vpc-endpoint/*",
+#           "arn:aws:ec2:*:*:vpc/*",
+#           "arn:aws:ec2:*:*:subnet/*",
+#           "arn:aws:ec2:*:*:security-group/*"
+#         ]
+#       },
+
+#       {
+#         Effect = "Allow"
+#         Action = [
+#           "ec2:CreateNetworkInterface"
+#         ]
+#         Resource = [
+#           "arn:aws:ec2:*:*:subnet/*",
+#           "arn:aws:ec2:*:*:network-interface/*"
+#         ]
+#       }
+#     ]
+#   })
+# }
+
+
+# resource "aws_iam_role_policy_attachment" "airflow_service" {
+#   role       = aws_iam_role.airflow_service.name
+#   policy_arn = "arn:aws:iam::aws:policy/aws-service-role/AmazonMWAAServiceRolePolicy"
+# }
+
+
 
 
 # resource "aws_iam_role" "emr_studio_service" {

@@ -6,7 +6,7 @@ resource "aws_emr_cluster" "lakehouse" {
 
   name                   = "${var.project}-${var.environment}-spark"
   release_label          = "emr-7.13.0"
-  os_release_label       = "2023.11.20260509.0"  # needed to prevent recreating the cluster for each apply
+  os_release_label       = "2023.11.20260509.0" # needed to prevent recreating the cluster for each apply
   applications           = ["Spark", "Livy", "Hadoop", "Hive", "JupyterEnterpriseGateway"]
   service_role           = aws_iam_role.emr_service.arn
   termination_protection = false
@@ -62,18 +62,18 @@ resource "aws_emr_cluster" "lakehouse" {
       Classification = "spark-defaults"
       Properties = {
         # resource allocation single node 4 cores / 16g mem
-        "spark.driver.memory"        = "4g"
-        "spark.driver.cores"         = "1"
-        "spark.executor.memory"      = "4g"
-        "spark.executor.cores"       = "1"
+        "spark.driver.memory"   = "4g"
+        "spark.driver.cores"    = "1"
+        "spark.executor.memory" = "4g"
+        "spark.executor.cores"  = "1"
 
         # AWS Glue Catalog with Iceberg
-        "spark.sql.catalog.iceberg_catalog" = "org.apache.iceberg.spark.SparkCatalog",
-        "spark.sql.catalog.iceberg_catalog.warehouse"="s3://${aws_s3_bucket.lakehouse.id}/warehouse/",
+        "spark.sql.catalog.iceberg_catalog"              = "org.apache.iceberg.spark.SparkCatalog",
+        "spark.sql.catalog.iceberg_catalog.warehouse"    = "s3://${aws_s3_bucket.lakehouse.id}/warehouse/",
         "spark.sql.catalog.iceberg_catalog.catalog-impl" = "org.apache.iceberg.aws.glue.GlueCatalog",
-        "spark.sql.catalog.iceberg_catalog.io-impl" = "org.apache.iceberg.aws.s3.S3FileIO",
-        "spark.sql.defaultCatalog"="iceberg_catalog",
-        "spark.sql.extensions"="org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
+        "spark.sql.catalog.iceberg_catalog.io-impl"      = "org.apache.iceberg.aws.s3.S3FileIO",
+        "spark.sql.defaultCatalog"                       = "iceberg_catalog",
+        "spark.sql.extensions"                           = "org.apache.iceberg.spark.extensions.IcebergSparkSessionExtensions"
 
         # Spark optimizations
         #"spark.sql.adaptive.enabled" = "true"
